@@ -1,0 +1,217 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public and private information about a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "bio": { "type": "string" },
+        "partnerAppUrl": { "type": "string", "format": "uri" },
+        "autoSync": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email"]
+    },
+    "Novel": {
+      "title": "Novel",
+      "description": "A story written by a user.",
+      "type": "object",
+      "properties": {
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string", "format": "uri" },
+        "title": { "type": "string" },
+        "genre": { "type": "string" },
+        "summary": { "type": "string" },
+        "coverImage": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "likesCount": { "type": "integer" },
+        "viewsCount": { "type": "integer" },
+        "sharesCount": { "type": "integer" },
+        "language": { "type": "string", "enum": ["ar", "en"] },
+        "violenceLevel": { "type": "string", "enum": ["none", "low", "medium", "high"] },
+        "moralTone": { "type": "string", "enum": ["moral", "neutral", "dark"] },
+        "fontFamily": { "type": "string" },
+        "fontSize": { "type": "string" },
+        "textAlign": { "type": "string", "enum": ["right", "left", "center", "justify"] },
+        "lineHeight": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "syncedFrom": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "externalId": { "type": "string" },
+        "previousPartId": { "type": "string" }
+      },
+      "required": ["authorUid", "title", "status"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "A single chapter of a novel.",
+      "type": "object",
+      "properties": {
+        "novelId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "order": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "externalId": { "type": "string" }
+      },
+      "required": ["novelId", "title", "content", "order"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A user comment on a chapter.",
+      "type": "object",
+      "properties": {
+        "novelId": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string", "format": "uri" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["novelId", "chapterId", "authorUid", "text"]
+    },
+    "LibraryItem": {
+      "title": "Library Item",
+      "description": "A novel saved to a user's library.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "novelId": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "novelId"]
+    },
+    "ReadingProgress": {
+      "title": "Reading Progress",
+      "description": "Tracking the last read chapter for a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "novelId": { "type": "string" },
+        "lastChapterId": { "type": "string" },
+        "lastChapterOrder": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "novelId", "lastChapterId", "lastChapterOrder"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "A relationship between a follower and a followed user.",
+      "type": "object",
+      "properties": {
+        "followerUid": { "type": "string" },
+        "followedUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["followerUid", "followedUid"]
+    },
+    "Character": {
+      "title": "Character",
+      "description": "A character in a novel.",
+      "type": "object",
+      "properties": {
+        "novelId": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["protagonist", "antagonist", "supporting"] },
+        "traits": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "externalId": { "type": "string" }
+      },
+      "required": ["novelId", "name", "role"]
+    },
+    "PublicUser": {
+      "title": "Public User Profile",
+      "description": "Publicly accessible user information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "bio": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "WorldNote": {
+      "title": "World Note",
+      "description": "A note about the world-building of a novel.",
+      "type": "object",
+      "properties": {
+        "novelId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string", "enum": ["location", "lore", "magic", "item", "other"] },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["novelId", "title", "category"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "A message in a character chat session.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/users_public/{userId}": {
+      "schema": "PublicUser",
+      "description": "Public user profiles."
+    },
+    "/novels/{novelId}": {
+      "schema": "Novel",
+      "description": "Novels collection."
+    },
+    "/novels/{novelId}/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "Chapters of a novel."
+    },
+    "/novels/{novelId}/chapters/{chapterId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments on a chapter."
+    },
+    "/novels/{novelId}/characters/{characterId}": {
+      "schema": "Character",
+      "description": "Characters in a novel."
+    },
+    "/novels/{novelId}/characters/{characterId}/chat/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Character chat messages."
+    },
+    "/novels/{novelId}/worldNotes/{noteId}": {
+      "schema": "WorldNote",
+      "description": "World building notes."
+    },
+    "/library/{libraryId}": {
+      "schema": "LibraryItem",
+      "description": "User library."
+    },
+    "/readingProgress/{progressId}": {
+      "schema": "ReadingProgress",
+      "description": "User reading progress."
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "User follows."
+    }
+  }
+}

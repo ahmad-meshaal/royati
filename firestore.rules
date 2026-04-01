@@ -1,0 +1,279 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (
+          (request.auth.token.email == "ahmad.meshaal.2040@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+    
+    function isNovelAuthor(novelId) {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/novels/$(novelId)) &&
+             get(/databases/$(database)/documents/novels/$(novelId)).data.authorUid == request.auth.uid;
+    }
+
+    function isValidStatUpdate(novelId, field) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([field]) &&
+             request.resource.data[field] == resource.data[field] + 1;
+    }
+
+    function isValidLikeUpdate(novelId) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']) &&
+             math.abs(request.resource.data.likesCount - resource.data.likesCount) == 1 &&
+             (
+               (request.resource.data.likesCount > resource.data.likesCount &&
+                !exists(/databases/$(database)/documents/novels/$(novelId)/likes/$(request.auth.uid)) &&
+                getAfter(/databases/$(database)/documents/novels/$(novelId)/likes/$(request.auth.uid)) != null) ||
+               (request.resource.data.likesCount < resource.data.likesCount &&
+                exists(/databases/$(database)/documents/novels/$(novelId)/likes/$(request.auth.uid)) &&
+                getAfter(/databases/$(database)/documents/novels/$(novelId)/likes/$(request.auth.uid)) == null)
+             );
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'bio', 'partnerAppUrl', 'autoSync', 'createdAt', 'role', 'updatedAt']) &&
+             (!('uid' in data) || (data.uid is string && (data.uid == request.auth.uid || isAdmin()))) &&
+             (!('email' in data) || (data.email is string && data.email.size() < 100)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 1000000)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 10000)) &&
+             (!('partnerAppUrl' in data) || (data.partnerAppUrl is string && data.partnerAppUrl.size() < 500)) &&
+             (!('autoSync' in data) || data.autoSync is bool) &&
+             (!('role' in data) || (data.role in ['user', 'admin'])) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidPublicUser(data) {
+      return hasOnlyAllowedFields(['uid', 'displayName', 'photoURL', 'bio', 'createdAt', 'updatedAt']) &&
+             (!('uid' in data) || (data.uid is string && (data.uid == request.auth.uid || isAdmin()))) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 1000000)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 10000)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidNovel(data) {
+      return hasOnlyAllowedFields(['id', 'authorUid', 'authorName', 'authorPhoto', 'title', 'genre', 'summary', 'coverImage', 'status', 'likesCount', 'viewsCount', 'sharesCount', 'createdAt', 'updatedAt', 'syncedFrom', 'isPublished', 'externalId', 'language', 'violenceLevel', 'moralTone', 'fontFamily', 'fontSize', 'textAlign', 'lineHeight', 'previousPartId']) &&
+             (!('authorUid' in data) || (data.authorUid is string && (request.method == 'create' ? data.authorUid == request.auth.uid : data.authorUid == resource.data.authorUid || isAdmin()))) &&
+             (!('title' in data) || (data.title is string && data.title.size() > 0 && data.title.size() < 200)) &&
+             (request.method == 'update' || (data.authorUid is string && data.title is string)) &&
+             (!('genre' in data) || (data.genre is string && data.genre.size() < 50)) &&
+             (!('summary' in data) || (data.summary is string && data.summary.size() < 10000)) &&
+             (!('coverImage' in data) || (data.coverImage is string && data.coverImage.size() < 1000000)) &&
+             (!('authorName' in data) || (data.authorName == null || (data.authorName is string && data.authorName.size() < 200))) &&
+             (!('authorPhoto' in data) || (data.authorPhoto == null || (data.authorPhoto is string && data.authorPhoto.size() < 1000000))) &&
+             (!('status' in data) || data.status in ['draft', 'published']) &&
+             (!('likesCount' in data) || data.likesCount is number) &&
+             (!('viewsCount' in data) || data.viewsCount is number) &&
+             (!('sharesCount' in data) || data.sharesCount is number) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('syncedFrom' in data) || data.syncedFrom is string) &&
+             (!('isPublished' in data) || data.isPublished is bool) &&
+             (!('externalId' in data) || data.externalId is string) &&
+             (!('language' in data) || (data.language is string && data.language.size() < 10)) &&
+             (!('violenceLevel' in data) || (data.violenceLevel is string && data.violenceLevel in ['none', 'low', 'medium', 'high'])) &&
+             (!('moralTone' in data) || (data.moralTone is string && data.moralTone in ['moral', 'neutral', 'dark', 'high'])) &&
+             (!('fontFamily' in data) || (data.fontFamily is string && data.fontFamily.size() < 100)) &&
+             (!('fontSize' in data) || (data.fontSize is string && data.fontSize.size() < 50)) &&
+             (!('textAlign' in data) || (data.textAlign is string && data.textAlign in ['right', 'left', 'center', 'justify'])) &&
+             (!('lineHeight' in data) || (data.lineHeight is string && data.lineHeight.size() < 50)) &&
+             (!('previousPartId' in data) || (data.previousPartId is string && data.previousPartId.size() < 100));
+    }
+
+    function isValidChapter(data) {
+      return hasOnlyAllowedFields(['novelId', 'title', 'content', 'description', 'order', 'createdAt', 'updatedAt', 'externalId', 'authorUid', 'status', 'isPublished']) &&
+             (!('novelId' in data) || (data.novelId is string && data.novelId.size() > 0)) &&
+             (!('authorUid' in data) || (data.authorUid is string && (request.method == 'create' ? data.authorUid == request.auth.uid : data.authorUid == resource.data.authorUid || isAdmin()))) &&
+             (!('title' in data) || (data.title is string && data.title.size() > 0 && data.title.size() < 200)) &&
+             (!('content' in data) || (data.content is string && data.content.size() < 1000000)) &&
+             (!('description' in data) || (data.description is string && data.description.size() < 5000)) &&
+             (!('order' in data) || data.order is number) &&
+             (!('status' in data) || data.status in ['draft', 'published']) &&
+             (!('isPublished' in data) || data.isPublished is bool) &&
+             (request.method == 'update' || (data.novelId is string && data.title is string && data.content is string && data.order is number)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('externalId' in data) || data.externalId is string);
+    }
+
+    function isValidCharacter(data) {
+      return hasOnlyAllowedFields(['novelId', 'name', 'role', 'traits', 'description', 'createdAt', 'updatedAt', 'externalId']) &&
+             (!('novelId' in data) || data.novelId is string) &&
+             (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() < 100)) &&
+             (!('role' in data) || data.role in ['protagonist', 'antagonist', 'supporting']) &&
+             (request.method == 'update' || (data.novelId is string && data.name is string && data.role is string)) &&
+             (!('traits' in data) || (data.traits is string && data.traits.size() < 1000)) &&
+             (!('description' in data) || (data.description is string && data.description.size() < 2000)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+             (!('externalId' in data) || data.externalId is string);
+    }
+
+    function isValidLibraryItem(data) {
+      return hasOnlyAllowedFields(['uid', 'novelId', 'addedAt']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.novelId is string && data.novelId.size() > 0 &&
+             (!('addedAt' in data) || data.addedAt is timestamp);
+    }
+
+    function isValidReadingProgress(data) {
+      return hasOnlyAllowedFields(['uid', 'novelId', 'lastChapterId', 'lastChapterOrder', 'updatedAt']) &&
+             data.uid is string && data.uid == request.auth.uid &&
+             data.novelId is string && data.novelId.size() > 0 &&
+             data.lastChapterId is string && data.lastChapterId.size() > 0 &&
+             data.lastChapterOrder is number &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidComment(data) {
+      return hasOnlyAllowedFields(['novelId', 'chapterId', 'authorUid', 'authorName', 'authorPhoto', 'text', 'createdAt']) &&
+             data.novelId is string && data.novelId.size() > 0 &&
+             data.chapterId is string && data.chapterId.size() > 0 &&
+             data.authorUid is string && data.authorUid == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000 &&
+             data.authorName is string && data.authorName.size() < 100 &&
+             (!('authorPhoto' in data) || (data.authorPhoto is string && data.authorPhoto.size() < 1000)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidWorldNote(data) {
+      return hasOnlyAllowedFields(['novelId', 'title', 'category', 'content', 'createdAt']) &&
+             data.novelId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.category in ['location', 'lore', 'magic', 'item', 'other'] &&
+             data.content is string && data.content.size() < 20000 &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidChatMessage(data) {
+      return hasOnlyAllowedFields(['role', 'text', 'createdAt']) &&
+             data.role in ['user', 'model'] &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 10000 &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    // Test connection
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // User profiles (Private data like email)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (!('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid);
+    }
+
+    // Public user profiles (DisplayName, PhotoURL, Bio)
+    match /users_public/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isValidPublicUser(request.resource.data);
+      allow update: if (isOwner(userId) || isAdmin()) && isValidPublicUser(request.resource.data) && (!('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid);
+    }
+
+    // Follows
+    match /follows/{followId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                    request.resource.data.followerUid == request.auth.uid &&
+                    request.resource.data.followerUid != request.resource.data.followedUid;
+      allow delete: if isAuthenticated() && 
+                    (resource.data.followerUid == request.auth.uid || isAdmin());
+    }
+
+    // Novels
+    match /novels/{novelId} {
+      allow read: if (isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin())) || resource.data.status == 'published';
+      allow create: if isAuthenticated() && request.resource.data.authorUid == request.auth.uid && isValidNovel(request.resource.data);
+      allow update: if (isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin()) && isValidNovel(request.resource.data)) || 
+                    isValidLikeUpdate(novelId) || 
+                    isValidStatUpdate(novelId, 'viewsCount') || 
+                    isValidStatUpdate(novelId, 'sharesCount');
+      allow delete: if isAuthenticated() && (resource.data.authorUid == request.auth.uid || isAdmin());
+      
+      // Likes subcollection
+      match /likes/{userId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+      
+      // Chapters subcollection
+      match /chapters/{chapterId} {
+        allow read: if isNovelAuthor(novelId) || get(/databases/$(database)/documents/novels/$(novelId)).data.status == 'published' || isAdmin();
+        allow create: if isNovelAuthor(novelId) && isValidChapter(request.resource.data);
+        allow update: if (isNovelAuthor(novelId) || isAdmin()) && isValidChapter(request.resource.data);
+        allow delete: if isNovelAuthor(novelId) || isAdmin();
+        
+        // Comments subcollection
+        match /comments/{commentId} {
+          allow read: if isNovelAuthor(novelId) || get(/databases/$(database)/documents/novels/$(novelId)).data.status == 'published' || isAdmin();
+          allow create: if isAuthenticated() && isValidComment(request.resource.data);
+          allow delete: if isAuthenticated() && (resource.data.authorUid == request.auth.uid || isNovelAuthor(novelId) || isAdmin());
+        }
+      }
+      
+      // Characters subcollection
+      match /characters/{characterId} {
+        allow read: if isNovelAuthor(novelId) || get(/databases/$(database)/documents/novels/$(novelId)).data.status == 'published' || isAdmin();
+        allow create: if isNovelAuthor(novelId) && isValidCharacter(request.resource.data);
+        allow update: if (isNovelAuthor(novelId) || isAdmin()) && isValidCharacter(request.resource.data);
+        allow delete: if isNovelAuthor(novelId) || isAdmin();
+
+        // Character chat subcollection
+        match /chat/{messageId} {
+          allow read: if isNovelAuthor(novelId) || isAdmin();
+          allow create: if isNovelAuthor(novelId) && isValidChatMessage(request.resource.data);
+          allow delete: if isNovelAuthor(novelId) || isAdmin();
+        }
+      }
+
+      // World notes subcollection
+      match /worldNotes/{noteId} {
+        allow read: if isNovelAuthor(novelId) || get(/databases/$(database)/documents/novels/$(novelId)).data.status == 'published' || isAdmin();
+        allow create: if isNovelAuthor(novelId) && isValidWorldNote(request.resource.data);
+        allow update: if (isNovelAuthor(novelId) || isAdmin()) && isValidWorldNote(request.resource.data);
+        allow delete: if isNovelAuthor(novelId) || isAdmin();
+      }
+    }
+
+    // Library
+    match /library/{libraryId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidLibraryItem(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+    // Reading Progress
+    match /readingProgress/{progressId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidReadingProgress(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin()) && isValidReadingProgress(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+  }
+}

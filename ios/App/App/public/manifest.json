@@ -1,0 +1,142 @@
+{
+  "name": "Roayti.Ai - منصة الكتابة الذكية",
+  "short_name": "Roayti",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "ar",
+  "dir": "rtl",
+  "description": "منصة احترافية لكتابة ونشر الروايات والقصص مدعومة بالذكاء الاصطناعي",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://placehold.co/512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://placehold.co/192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://placehold.co/512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["books", "productivity", "education"],
+  "shortcuts": [
+    {
+      "name": "رواية جديدة",
+      "short_name": "جديد",
+      "description": "ابدأ كتابة رواية جديدة فوراً",
+      "url": "/?action=new",
+      "icons": [{ "src": "https://placehold.co/192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "مكتبتي",
+      "short_name": "مكتبتي",
+      "description": "عرض الروايات الخاصة بك",
+      "url": "/?view=library",
+      "icons": [{ "src": "https://placehold.co/192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "protocol_handlers": [
+    {
+      "protocol": "web+roayti",
+      "url": "/?uri=%s"
+    }
+  ],
+  "scope_extensions": [
+    {
+      "origin": "*.run.app"
+    }
+  ],
+  "iarc_rating_id": "e8463a5d-2d6d-4bc4-83b2-938561701c7b",
+  "file_handlers": [
+    {
+      "action": "/?action=open-file",
+      "accept": {
+        "text/plain": [".txt", ".md"],
+        "application/json": [".json"]
+      },
+      "icons": [
+        {
+          "src": "https://placehold.co/192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ],
+  "share_target": {
+    "action": "/?action=share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "display_override": [
+    "tabbed",
+    "window-controls-overlay",
+    "minimal-ui",
+    "standalone"
+  ],
+  "display": "standalone",
+  "note_taking": {
+    "new_note_url": "/?action=new-note"
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "widgets": [
+    {
+      "name": "روايتي - إحصائيات",
+      "description": "عرض إحصائيات كتابتك اليومية",
+      "tag": "stats",
+      "template": "widget-template",
+      "ms_ac_template": "/widget-template.json",
+      "data": "/widget-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "https://placehold.co/400x200.png",
+          "sizes": "400x200",
+          "type": "image/png",
+          "label": "Widget Preview"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://placehold.co/1080x1920.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Home Screen"
+    },
+    {
+      "src": "https://placehold.co/1920x1080.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Desktop View"
+    }
+  ]
+}

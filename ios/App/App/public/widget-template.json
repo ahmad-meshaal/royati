@@ -1,0 +1,50 @@
+{
+  "type": "AdaptiveCard",
+  "body": [
+    {
+      "type": "TextBlock",
+      "size": "Medium",
+      "weight": "Bolder",
+      "text": "إحصائيات روايتي"
+    },
+    {
+      "type": "ColumnSet",
+      "columns": [
+        {
+          "type": "Column",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "الروايات",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "${novelsCount}",
+              "size": "ExtraLarge",
+              "color": "Accent"
+            }
+          ]
+        },
+        {
+          "type": "Column",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "الكلمات",
+              "wrap": true
+            },
+            {
+              "type": "TextBlock",
+              "text": "${wordsCount}",
+              "size": "ExtraLarge",
+              "color": "Accent"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5"
+}
